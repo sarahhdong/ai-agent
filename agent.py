@@ -11,7 +11,7 @@ class MistralAgent:
         MISTRAL_API_KEY = os.getenv("MISTRAL_API_KEY")
 
         self.client = Mistral(api_key=MISTRAL_API_KEY)
-
+ 
     async def run(self, message: discord.Message):
         # The simplest form of an agent
         # Send the message's content to Mistral's API and return Mistral's response
