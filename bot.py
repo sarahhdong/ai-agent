@@ -7,7 +7,7 @@ from discord.ext import commands
 from discord.ui import View, Button, Select
 from discord import ButtonStyle
 from dotenv import load_dotenv
-from agent import MistralAgent
+from agent import TherapyAgent
 
 import asyncio
 import matplotlib.pyplot as plt
@@ -30,10 +30,39 @@ intents = discord.Intents.all()
 bot = commands.Bot(command_prefix=PREFIX, intents=intents)
 
 # Import the Mistral agent from the agent.py file
-agent = MistralAgent()
+agent = TherapyAgent()
 
 # Get the token from the environment variables
 token = os.getenv("DISCORD_TOKEN")
+
+# Enable message content intent so the bot can read messages.
+# The message content intent must be enabled in the Discord Developer Portal as well.
+intents.message_content = True
+
+logger = logging.getLogger("discord")
+
+# Chat Features
+@bot.event
+async def on_message(message: discord.Message):
+    """
+    Called when a message is sent in any channel the bot can see.
+
+    https://discordpy.readthedocs.io/en/latest/api.html#discord.on_message
+    """
+    # Don't delete this line! It's necessary for the bot to process commands.
+    await bot.process_commands(message)
+
+    # Ignore messages from self or other bots to prevent infinite loops.
+    if message.author.bot or message.content.startswith("!"):
+        return
+
+    # Process the message with the agent you wrote
+    # Open up the agent.py file to customize the agent
+    logger.info(f"Processing message from {message.author}: {message.content}")
+    response = await agent.run(message)
+
+    # Send the response back to the channel
+    await message.reply(response)
 
 # Define Button View Class
 class FeatureButtons(View):
