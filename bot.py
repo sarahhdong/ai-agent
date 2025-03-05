@@ -16,7 +16,7 @@ from datetime import datetime
 #import certifi
 #os.environ['SSL_CERT_FILE'] = certifi.where()
 
-PREFIX = "!"
+PREFIX = "!" 
 
 # Setup logging
 logger = logging.getLogger("discord")
