@@ -1,10 +1,10 @@
 import os
 from mistralai import Mistral
-import discord
+import discord   
 
 MISTRAL_MODEL = "mistral-large-latest"
-SYSTEM_PROMPT = "You are a helpful assistant."
-
+#MISTRAL_MODEL = "mental-health-mistral-7b"
+SYSTEM_PROMPT = "You are a helpful therapist assistant."
 
 class MistralAgent:
     def __init__(self):
@@ -27,3 +27,20 @@ class MistralAgent:
         )
 
         return response.choices[0].message.content
+    
+    async def get_mistral_response(self, prompt: str):
+        """Fetch AI-generated responses from Mistral AI."""
+        try:
+            response = await self.client.chat.complete_async(
+                model=MISTRAL_MODEL,
+                messages=[
+                    {"role": "system", "content": "You are a supportive mental health assistant. Provide uplifting and encouraging responses."},
+                    {"role": "user", "content": prompt}
+                ]
+            )
+            return response.choices[0].message.content.strip()
+        except Exception as e:
+            print(f"Error fetching affirmation: {e}")
+            return "🌟 **Daily Affirmation:** You are capable and enough!" 
+            
+    
