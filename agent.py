@@ -155,6 +155,26 @@ class UserManager:
         mood_data = json.loads(response.choices[0].message.content)
         return mood_data["mood"]
 
+    def get_mood_logs(self, user_id):
+        """Retrieve mood logs for a user."""
+        profile = self.user_profiles[user_id]
+        name = profile.get("name")
+        age = profile.get("age")
+        location = profile.get("location")
+        logs = self.mood_journal.get(user_id, [])
+        if not logs:
+            return "You don't have any mood logs yet! 📓"
+
+        log_messages = [f"📓 User: {name} | {age} | {location} \n"]
+        for i, entry in enumerate(logs, 1):
+            log_messages.append(
+                f"📅 **Entry {i}:**\n"
+                f"- Timestamp: {entry['timestamp']}\n"
+                f"- Mood: {entry['mood']}\n"
+                f"- Summary: {entry['synthesis']}\n"
+            )
+        return "\n".join(log_messages)
+
     async def get_conversation(self,user_id):
         convo_pairs = self.user_conversations[user_id]["conversation"]
         # Convert list of tuples into a readable conversation
@@ -176,6 +196,8 @@ class UserManager:
     def add_to_conversation(self, user_id, user_msg, bot_msg):
         convo = self.user_conversations.setdefault(user_id, {"conversation": []})
         convo["conversation"].append((user_msg, bot_msg))
+
+
 
 
 class OnboardingManager:
@@ -294,9 +316,12 @@ class OnboardingManager:
 
             await message.reply(
                 f"Thanks {profile["name"]}! 😊 I'm your personal therapy bot.\n"
-                "You can talk to me about anything.\n"
+                "You can talk to me about anything.\n\n"
                 "**Features available:** Mood journaling, breathing exercises, affirmations & more! 🌸\n\n"
+              
                 "Type `!menu` anytime to explore!\n\n"
+                "Type `!logs` anytime to see your mood logs!\n\n"  
+                "Type '!helpme' for assistance!\n\n"                     
                 "So, how are you doing today?"
             )
 

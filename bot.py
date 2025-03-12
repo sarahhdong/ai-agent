@@ -255,7 +255,39 @@ if __name__ == "__main__":
         await ctx.send("**🌸 **This is your quiet corner to relax and refresh; and to reconnect with yourself.** 🌸\n\n"
                        "**Click the button to access a feature:", view=FeatureButtons())
 
+        # Command to Show Mood Journal Logs
 
+
+    @bot.command(name="logs")
+    async def show_logs(ctx):
+        """Displays user's mood journal logs."""
+        user_id = str(ctx.author.id)
+
+        # Check if user is onboarded first
+        if not bot.user_manager.is_onboarded(user_id):
+            await ctx.send("👋 Let's get to know each other first! Type anything to start onboarding.")
+            return
+
+        logs = bot.user_manager.get_mood_logs(user_id)
+
+        # Split into multiple messages if too long (Discord limit is 2000 characters)
+        if len(logs) <= 2000:
+            await ctx.send(logs)
+        else:
+            chunks = [logs[i:i + 2000] for i in range(0, len(logs), 2000)]
+            for chunk in chunks:
+                await ctx.send(chunk)
+
+
+    @bot.command(name="helpme")
+    async def help_command(ctx):
+        """Displays available commands."""
+        await ctx.send(
+            "**Available Commands:**\n"
+            "`!menu` - Explore wellness activities 🌸\n"
+            "`!logs` - View your mood journal entries 📓\n"
+            "`!helpme` - Show this help message"
+        )
     # Bot Ready Event
     @bot.event
     async def on_ready():
