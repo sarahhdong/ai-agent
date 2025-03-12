@@ -139,7 +139,7 @@ class UserManager:
         profile = self.user_profiles.get(user_id, {})
         entry = {
             "timestamp": datetime.datetime.now().isoformat(),
-            "name": profile.get("name")
+            "name": profile.get("name"),
             "age": profile.get("age"),
             "location": profile.get("location"),
             "mood": mood,
