@@ -230,9 +230,10 @@ class DiscordBot(commands.Bot):
         self.user_manager.add_to_conversation(user_id, message.content, response)
 
         # Mood journaling offer
-        if message_count == 3:
+        if message_count % 3 == 0:
             await message.reply("Would you like to log your mood in the journal? (yes/no)")
             state["awaiting_mood_journal"] = True
+            state["awaiting_exercise_decision"] = False
             return
 
 
@@ -242,19 +243,21 @@ if __name__ == "__main__":
     token = os.getenv("DISCORD_TOKEN")
 
     bot = DiscordBot()
+
+
+    # Command to Show Feature Buttons
+    @bot.command(name="menu")
+    async def show_menu(ctx):
+        """Displays interactive buttons for features."""
+        await ctx.send("**🌸 **This is your quiet corner to relax and refresh; and to reconnect with yourself.** 🌸\n\n"
+                       "**Click the button to access a feature:", view=FeatureButtons())
+
+
+    # Bot Ready Event
+    @bot.event
+    async def on_ready():
+        print(f"Logged in as {bot.user}")
+
     bot.run(token)
 
-# Command to Show Feature Buttons
-@bot.command(name="menu")
-async def show_menu(ctx):
-    """Displays interactive buttons for features."""
-    await ctx.send("**🌸 **This is your quiet corner to relax and refresh; and to reconnect with yourself.** 🌸\n\n"
-            "**Click the button to access a feature:", view=FeatureButtons())
 
-# Bot Ready Event
-@bot.event
-async def on_ready():
-    print(f"Logged in as {bot.user}")
-
-# Start the bot, connecting it to the gateway
-bot.run(token)

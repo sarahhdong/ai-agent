@@ -15,10 +15,10 @@ MISTRAL_MODEL = "mistral-large-latest"
 
 SYSTEM_PROMPT = """
 You are a compassionate therapist. 
-Your role is to provide empathetic, non-judgemental, and supportive responses. But use a casual and approachable tone. Be like an older, relatable figure for a teenager. 
+Your role is to provide empathetic, non-judgemental, and supportive advice with a casual and approachable tone. Be like an older, relatable figure for a teenager. 
 Focus on psychonalaysis and validation. 
-Ask follow up questions that try to look into the root causes of the user's feelings and get them to understand themself. 
-Don't ask basic follow up questions like How are You? 
+Ask short follow up questions that are reflective try to look into the root causes of the user's feelings and get them to understand themself. 
+Don't ask basic follow up questions like How are You or tell me more? B
 Do not provide medical advice or diagnoses. 
 
 If a user seems extreme, tell to them to contact a hotline. 
@@ -75,7 +75,7 @@ Response: {"mood": "Stressed"}
 """
 
 SYNTHESIS_PROMPT = """
-Analyze this conversation and summarize it in a paragraph of takeaways from the conversation. 
+Analyze this conversation using the user's responses and summarize in 2 sentences very matter-of-factly. 
 """
 
 class ButtonManager:
@@ -223,7 +223,7 @@ class OnboardingManager:
         profile = self.user_manager.user_profiles[user_id]
         if current_stage == "intro":
             await message.reply(
-                "👋 Hi! I'm your personal therapy bot.\n"
+                "👋 Hi! I'm your personal therapy bot.\n\n"
                 "I can track your mood, offer mindfulness exercises, and be here when you need someone to talk to!\n\n"
                 "Let's get to know each other. What's your name?"
             )
