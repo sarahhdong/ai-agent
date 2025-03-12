@@ -1,13 +1,17 @@
 import os
 import discord
 import logging
-import random   
- 
+import random
+import platform
+
 from discord.ext import commands
 from discord.ui import View, Button, Select
 from discord import ButtonStyle
 from dotenv import load_dotenv
 from agent import TherapyAgent
+from agent import UserManager
+from agent import OnboardingManager
+from agent import ButtonManager
 
 import asyncio
 import matplotlib.pyplot as plt
@@ -16,54 +20,17 @@ from datetime import datetime
 #import certifi
 #os.environ['SSL_CERT_FILE'] = certifi.where()
 
-PREFIX = "!" 
-
-# Setup logging
-logger = logging.getLogger("discord")
-
-# Load the environment variables
-load_dotenv()
-
-# Create the bot with all intents
-# The message content and members intent must be enabled in the Discord Developer Portal for the bot to work.
 intents = discord.Intents.all()
-bot = commands.Bot(command_prefix=PREFIX, intents=intents)
-
-# Import the Mistral agent from the agent.py file
-agent = TherapyAgent()
-
-# Get the token from the environment variables
-token = os.getenv("DISCORD_TOKEN")
-
 # Enable message content intent so the bot can read messages.
 # The message content intent must be enabled in the Discord Developer Portal as well.
 intents.message_content = True
 
 logger = logging.getLogger("discord")
 
-# Chat Features
-@bot.event
-async def on_message(message: discord.Message):
-    """
-    Called when a message is sent in any channel the bot can see.
+PREFIX = "!"
+CUSTOM_STATUS = "therapy chats 🤗"
 
-    https://discordpy.readthedocs.io/en/latest/api.html#discord.on_message
-    """
-    # Don't delete this line! It's necessary for the bot to process commands.
-    await bot.process_commands(message)
-
-    # Ignore messages from self or other bots to prevent infinite loops.
-    if message.author.bot or message.content.startswith("!"):
-        return
-
-    # Process the message with the agent you wrote
-    # Open up the agent.py file to customize the agent
-    logger.info(f"Processing message from {message.author}: {message.content}")
-    response = await agent.run(message)
-
-    # Send the response back to the channel
-    await message.reply(response)
-
+button_manager = ButtonManager()
 # Define Button View Class
 class FeatureButtons(View):
     def __init__(self):
@@ -83,7 +50,7 @@ class AffirmationButton(Button):
         super().__init__(label="Affirmation", style=discord.ButtonStyle.primary, custom_id="affirmation")
     async def callback(self, interaction: discord.Interaction):
         await interaction.response.defer(ephemeral=True)
-        affirmation = await agent.get_mistral_response("Give me a short, positive daily affirmation.")
+        affirmation = await button_manager.get_mistral_response("Give me a short, positive daily affirmation.")
         await interaction.followup.send(f"🌟 **Daily Affirmation:** {affirmation}", ephemeral=True)
 
 class SelfCareButton(Button):
@@ -91,7 +58,7 @@ class SelfCareButton(Button):
         super().__init__(label="Self Care", style=discord.ButtonStyle.primary, custom_id="selfcare")
     async def callback(self, interaction: discord.Interaction):
         await interaction.response.defer(ephemeral=True)
-        selfcare = await agent.get_mistral_response("Give me a self-care tip.")
+        selfcare = await button_manager.get_mistral_response("Give me a self-care tip.")
         await interaction.followup.send(f"🌟 **Self-Care Tip:** {selfcare}", ephemeral=True)
 
 class BreatheButton(Button):
@@ -122,7 +89,7 @@ class MusicButton(Button):
         super().__init__(label="Sounds of Music", style=discord.ButtonStyle.primary, custom_id="music")
     async def callback(self, interaction: discord.Interaction):
         await interaction.response.defer(ephemeral=True)
-        musics = await agent.get_mistral_response("Give me two therapy music links.")
+        musics = await button_manager.get_mistral_response("Give me two therapy music links.")
         await interaction.followup.send(f"🎼 **Sounds of music:** {musics}", ephemeral=True)
 
 class ArtButton(Button):
@@ -130,7 +97,7 @@ class ArtButton(Button):
         super().__init__(label="Peaceful Art", style=discord.ButtonStyle.primary, custom_id="art")
     async def callback(self, interaction: discord.Interaction):
         await interaction.response.defer(ephemeral=True)
-        arts = await agent.get_mistral_response("Give me two peaceful art links.")
+        arts = await button_manager.get_mistral_response("Give me two peaceful art links.")
         await interaction.followup.send(f"🎼 **Peaceful art:** {arts}", ephemeral=True)
 
 class MindfulButton(Button):
@@ -138,7 +105,7 @@ class MindfulButton(Button):
         super().__init__(label="Mindfulness Practice", style=discord.ButtonStyle.primary, custom_id="mindful")
     async def callback(self, interaction: discord.Interaction):
         await interaction.response.defer(ephemeral=True)
-        minds = await agent.get_mistral_response("Give me simple mindful tips (not about he breathing and five sense).")
+        minds = await button_manager.get_mistral_response("Give me simple mindful tips (not about he breathing and five sense).")
         await interaction.followup.send(f"🎼 **Mindfulness practice:** {minds}", ephemeral=True)
 
 gratitude_prompts = [
@@ -169,8 +136,113 @@ class GroundButton(Button):
         super().__init__(label="Five Senses Grounding ", style=discord.ButtonStyle.primary, custom_id="ground")
     async def callback(self, interaction: discord.Interaction):
         await interaction.response.defer(ephemeral=True)
-        grounds = await agent.get_mistral_response("Give me five-sense grounding technique.")
+        grounds = await button_manager.get_mistral_response("Give me five-sense grounding technique.")
         await interaction.followup.send(f"🎼 **Five sense grounding:** {grounds}", ephemeral=True)
+
+class DiscordBot(commands.Bot):
+    def __init__(self):
+        super().__init__(
+            command_prefix=commands.when_mentioned_or(PREFIX),
+            intents=intents
+        )
+        self.logger = logger
+
+        # Set up managers and agents
+        self.user_manager = UserManager()
+        self.therapy_agent = TherapyAgent(self.user_manager)
+        self.onboarding_manager = OnboardingManager(self.user_manager, self.therapy_agent)
+
+
+
+    async def on_ready(self):
+        self.logger.info("-------------------")
+        self.logger.info(f"Logged in as {self.user}")
+        self.logger.info(f"Discord.py API version: {discord.__version__}")
+        self.logger.info(f"Python version: {platform.python_version()}")
+        self.logger.info(f"Running on: {platform.system()} {platform.release()} ({os.name})")
+        self.logger.info("-------------------")
+
+        # Set bot status
+        await self.change_presence(
+            activity=discord.Activity(
+                type=discord.ActivityType.listening,
+                name=CUSTOM_STATUS
+            )
+        )
+
+    async def on_message(self, message: discord.Message):
+        await self.process_commands(message)
+
+        # Ignore messages from self or other bots
+        if (
+            message.author == self.user
+            or message.author.bot
+            or message.content.startswith("!")
+        ):
+            return
+
+        self.logger.info(f"Message from {message.author}: {message.content}")
+        user_id = str(message.author.id)
+
+        # Check if user needs onboarding
+        if self.onboarding_manager.needs_onboarding(user_id):
+            await self.onboarding_manager.handle_onboarding(message)
+            return
+
+        # Get profile and state
+        profile = self.user_manager.user_profiles.get(user_id)
+        state = self.user_manager.user_states[user_id]
+
+        # Handle journaling
+        if state.get("awaiting_mood_journal", False):
+            if message.content.lower() in ["yes", "y"]:
+                mood = await self.user_manager.get_mood(user_id)
+                profile = self.user_manager.user_profiles[user_id]
+                weather = self.user_manager.get_weather(profile["location"])
+                synthesis = await self.user_manager.summarize_conversation(user_id)
+
+                self.user_manager.log_mood(user_id, mood, synthesis, weather)
+                await message.reply(f"📓 Mood logged! Mood: {mood}, Weather: {weather}, Summary: {synthesis}")
+
+                if mood in ["Sad", "Stressed", "Anxious", "Frustrated", "Angry"]:
+                    await message.reply("Would you like to try some exercises? (yes/no)")
+                    state["awaiting_exercise_decision"] = True
+                else:
+                    await message.reply(
+                        "Would you like to continue our conversation or try exercises? (continue/exercises)")
+                    state["awaiting_exercise_decision"] = True
+
+                state["awaiting_mood_journal"] = False
+
+        if state.get("awaiting_exercise_decision", False):
+            if message.content.lower() in ["yes", "exercises"]:
+                await message.reply("Here's a menu of helpful exercises 🌸", view=FeatureButtons())
+            else:
+                await message.reply("No problem! I'm here whenever you need me 😊")
+            state["awaiting_exercise_decision"] = False
+
+        # Normal conversation flow
+        message_count = self.user_manager.increment_message_count(user_id)
+        response = await self.therapy_agent.run(message, user_id)
+        # Run the therapy agent
+        await message.reply(response)
+
+        self.user_manager.add_to_conversation(user_id, message.content, response)
+
+        # Mood journaling offer
+        if message_count == 3:
+            await message.reply("Would you like to log your mood in the journal? (yes/no)")
+            state["awaiting_mood_journal"] = True
+            return
+
+
+
+if __name__ == "__main__":
+    load_dotenv()
+    token = os.getenv("DISCORD_TOKEN")
+
+    bot = DiscordBot()
+    bot.run(token)
 
 # Command to Show Feature Buttons
 @bot.command(name="menu")
@@ -185,4 +257,4 @@ async def on_ready():
     print(f"Logged in as {bot.user}")
 
 # Start the bot, connecting it to the gateway
-bot.run(token) 
+bot.run(token)
