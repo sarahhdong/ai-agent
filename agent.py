@@ -135,27 +135,18 @@ class UserManager:
         state["message_count"] += 1
         return state["message_count"]
 
-    def log_mood(self, user_id, mood, synthesis, weather):
+    def log_mood(self, user_id, mood, synthesis):
+        profile = self.user_profiles.get(user_id, {})
         entry = {
             "timestamp": datetime.datetime.now().isoformat(),
+            "name": profile.get("name")
+            "age": profile.get("age"),
+            "location": profile.get("location"),
             "mood": mood,
-            "weather": weather,
             "synthesis": synthesis
         }
         self.mood_journal.setdefault(user_id, []).append(entry)
-
-    # change this
-    def get_weather(self, location):
-        """Fetch simple weather using OpenWeatherMap API (replace with your key)."""
-        API_KEY = os.getenv("WEATHER_API_KEY")
-        url = f"http://api.openweathermap.org/data/2.5/weather?q={location}&appid={API_KEY}&units=metric"
-        response = requests.get(url)
-        if response.status_code != 200:
-            return "Weather unavailable"
-        data = response.json()
-        description = data["weather"][0]["description"]
-        temp = data["main"]["temp"]
-        return f"{description}, {temp}°C"
+        logger.info(f"Logged mood for user {user_id}: {entry}")
 
     async def get_mood(self, user_id):
         convo_pairs = self.user_conversations[user_id]["conversation"]

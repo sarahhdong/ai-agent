@@ -201,7 +201,7 @@ class DiscordBot(commands.Bot):
                 weather = self.user_manager.get_weather(profile["location"])
                 synthesis = await self.user_manager.summarize_conversation(user_id)
 
-                self.user_manager.log_mood(user_id, mood, synthesis, weather)
+                self.user_manager.log_mood(user_id, mood, synthesis)
                 await message.reply(f"📓 Mood logged! Mood: {mood}, Weather: {weather}, Summary: {synthesis}")
 
                 if mood in ["Sad", "Stressed", "Anxious", "Frustrated", "Angry"]:
@@ -213,28 +213,30 @@ class DiscordBot(commands.Bot):
                     state["awaiting_exercise_decision"] = True
 
                 state["awaiting_mood_journal"] = False
+            return
 
-        if state.get("awaiting_exercise_decision", False):
+        elif state.get("awaiting_exercise_decision", False):
             if message.content.lower() in ["yes", "exercises"]:
                 await message.reply("Here's a menu of helpful exercises 🌸", view=FeatureButtons())
             else:
                 await message.reply("No problem! I'm here whenever you need me 😊")
             state["awaiting_exercise_decision"] = False
+            return
 
         # Normal conversation flow
         message_count = self.user_manager.increment_message_count(user_id)
-        response = await self.therapy_agent.run(message, user_id)
-        # Run the therapy agent
-        await message.reply(response)
-
-        self.user_manager.add_to_conversation(user_id, message.content, response)
-
         # Mood journaling offer
         if message_count % 3 == 0:
             await message.reply("Would you like to log your mood in the journal? (yes/no)")
             state["awaiting_mood_journal"] = True
             state["awaiting_exercise_decision"] = False
             return
+
+        response = await self.therapy_agent.run(message, user_id)
+        # Run the therapy agent
+        await message.reply(response)
+
+        self.user_manager.add_to_conversation(user_id, message.content, response)
 
 
 
