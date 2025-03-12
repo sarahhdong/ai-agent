@@ -29,8 +29,6 @@ logger = logging.getLogger("discord")
 
 PREFIX = "!"
 CUSTOM_STATUS = "therapy chats 🤗"
-
-button_manager = ButtonManager()
 # Define Button View Class
 class FeatureButtons(View):
     def __init__(self):
@@ -204,7 +202,7 @@ class DiscordBot(commands.Bot):
                 location = profile.get("location")
 
                 self.user_manager.log_mood(user_id, mood, synthesis)
-                await message.reply(f"📓 Mood logged! \n User: {name}, {age}, {location} \n Mood: {mood} \n Summary: {synthesis}")
+                await message.reply(f"📓 Mood logged! \n User: {name} | {age} | {location} \n Mood: {mood} \n Summary: {synthesis}")
 
                 if mood in ["Sad", "Stressed", "Anxious", "Frustrated", "Angry"]:
                     await message.reply("Would you like to try some exercises? (yes/no)")
@@ -248,6 +246,7 @@ if __name__ == "__main__":
 
     bot = DiscordBot()
 
+    button_manager = ButtonManager()
 
     # Command to Show Feature Buttons
     @bot.command(name="menu")
