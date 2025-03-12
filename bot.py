@@ -198,11 +198,13 @@ class DiscordBot(commands.Bot):
             if message.content.lower() in ["yes", "y"]:
                 mood = await self.user_manager.get_mood(user_id)
                 profile = self.user_manager.user_profiles[user_id]
-                weather = self.user_manager.get_weather(profile["location"])
                 synthesis = await self.user_manager.summarize_conversation(user_id)
+                name = profile.get("name")
+                age = profile.get("age")
+                location = profile.get("location")
 
                 self.user_manager.log_mood(user_id, mood, synthesis)
-                await message.reply(f"📓 Mood logged! Mood: {mood}, Weather: {weather}, Summary: {synthesis}")
+                await message.reply(f"📓 Mood logged! \n User: {name}, {age}, {location} \n Mood: {mood} \n Summary: {synthesis}")
 
                 if mood in ["Sad", "Stressed", "Anxious", "Frustrated", "Angry"]:
                     await message.reply("Would you like to try some exercises? (yes/no)")
